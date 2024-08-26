@@ -71,19 +71,17 @@ public_users.get('/',function (req, res) {
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
- });
-
-  const isbn = req.params.isbn.trim({;
-  for (const book of Object.values(books)) {
-    if (book.isbn == isbn) {
-        return res.send(book);
+    const isbn = req.params.isbn.trim();
+    for (const book of Object.values(books)) {
+      if (book.isbn == isbn) {
+          return res.send(book);
+      }
     }
-  }
+  
+    return res.send(`Book not found (${isbn})`);
+  });
 
-  return res.send(`Book not found (${isbn})`);
-});
+  
 
 
 public_users.get('/author/:author',function (req, res) {

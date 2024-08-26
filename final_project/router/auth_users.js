@@ -4,8 +4,7 @@ let books = require("./booksdb.js");
 const regd_users = express.Router();
 let users = [];
 
-const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
+const isValid = (username)=>{
     // Filter the users array for any user with the same username
     let userswithsamename = users.filter((user) => {
         return user.username === username;
@@ -18,8 +17,7 @@ const isValid = (username)=>{ //returns boolean
     }
 }
 
-const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
+ //if username and password match the one we have in records.
 // Check if the user with the given username and password exists
 const authenticatedUser = (username, password) => {
     // Filter the users array for any user with the same username and password
@@ -54,9 +52,20 @@ const doesExist = (username) => {
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const user = users.find(u => u.username === username);
+    if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+    }
 
+    // Проверяем, совпадает ли пароль
+    if (user.password !== password) {
+        return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    // Создаем и возвращаем токен (например, JWT) или устанавливаем сессию
+    // В этом примере просто возвращаем успешное сообщение
+    return res.status(200).json({ message: "Login successful", user: username });
+});
 
 // Add a book review
 regd_users.put("/review/:isbn", (req, res) => {
@@ -83,10 +92,8 @@ regd_users.put("/review/:isbn", (req, res) => {
     return res.send(`Book not found (${isbn})`);
 });
 
-// Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+
+
 regd_users.delete("/review/:isbn", (req, res) => {
     const isbn = req.params.isbn.trim();
     const username = (((req.session??"").authorization??"").username??"");
