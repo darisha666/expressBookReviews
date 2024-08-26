@@ -1,92 +1,131 @@
 const express = require('express');
-const public_users = express.Router();
+
+const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
-let users = require("./auth_users.js").users
-public_users.post("/register", (req, res) => {
-    const user = req.body;
-    if (!user.username || !user.password) {
-        return res.status(400).json({ message: "Username and password are required!" });
+let doesExist = require("./auth_users.js").doesExist;
+let authenticatedUser = require("./auth_users.js").authenticatedUser;
+let users = require("./auth_users.js").users;
+const public_users = express.Router();
+
+
+public_users.post("/register", (req,res) => {
+  //Write your code here
+  return res.status(300).json({message: "Yet to be implemented"});
+    const username = req.body.username;
+    const password = req.body.password;
+    // Check if both username and password are provided
+    if (username && password) {
+        // Check if the user does not already exist
+        if (!doesExist(username)) {
+            // Add the new user to the users array
+            users.push({"username": username, "password": password});
+            return res.status(200).json({message: "User successfully registered. Now you can login"});
+        } else {
+            return res.status(404).json({message: "User already exists!"});
+        }
     }
+    // Return error if username or password is missing
+    return res.status(404).json({message: "Unable to register user."});}
+);
 
-    if (!isValid(user.username)) {
-        return res.status(400).json({ message: "Username is already used!" });
+//only registered users can login
+public_users.post("/login", (req,res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+//    console.log(`login authenticatedUser: ${username} @ ${password} (${users.length})`);
+
+    // Check if username or password is missing
+    if (!username || !password) {
+        return res.status(404).json({ message: "Error logging in" });
     }
+    // Authenticate user
+    if (authenticatedUser(username, password)) {
+        // Generate JWT access token
+//        console.log('tobby jwt access token', typeof(req.session), req.session);
 
-    users.push(user);
-    return res.status(201).json({ message: "User registered successfully" });
-});
+        let accessToken = jwt.sign({
+            data: password
+        }, 'access', { expiresIn: 60 * 60 });
 
-function simulate(callback) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(callback());
-        }, 1000); 
-    });
-}
-public_users.get("/", async (req, res) => {
-    const response = await simulate(() => books);
-    return res.status(200).json(response);
-});
+        // Store access token and username in session
+        req.session.authorization = {
+            accessToken, username
+        };
 
-// Получение книги по ISBN
-public_users.get('/isbn/:isbn', async (req, res) => {
-    const isbn = req.params["isbn"];
-    const book = books[isbn];
-    
-    if (book) {
-        const response = await simulate(() => book);
-        return res.status(200).json(response);
+        //console.log(`login tobby ${username} : ${password}`, accessToken, eq.session.authorization);
+
+        return res.status(200).send("User successfully logged in");
     } else {
-        return res.status(404).json({ message: "Book not found" });
-    }
-});
-public_users.get('/author/:author', async (req, res) => {
-    const author = req.params["author"];
-    
-    const response = await simulate(() => {
-        const booksKeys = Object.keys(books);
-        const booksByAuthor = {};
-        
-        booksKeys.forEach((key) => {
-            if (books[key].author === author) {
-                booksByAuthor[key] = books[key];
-            }
-        });
-        
-        return booksByAuthor;
-    });
-    
-    return res.status(200).json(response);
-});
-public_users.get('/title/:title', async (req, res) => {
-    const title = req.params["title"];
-    
-    const response = await simulate(() => {
-        const booksKeys = Object.keys(books);
-        const booksByTitle = {};
-        
-        booksKeys.forEach((key) => {
-            if (books[key].title === title) {
-                booksByTitle[key] = books[key];
-            }
-        });
-        
-        return booksByTitle;
-    });
-    
-    return res.status(200).json(response);
-});
-public_users.get('/review/:isbn', async (req, res) => {
-    const isbn = req.params["isbn"];
-    const book = books[isbn];
-    
-    if (book) {
-        const response = await simulate(() => book.reviews);
-        return res.status(200).json(response);
-    } else {
-        return res.status(404).json({ message: "Book not found" });
+        return res.status(208).json({ message: "Invalid Login. Check username and password" });
     }
 });
 
-module.exports = public_users;
+// Get the book list available in the shop
+public_users.get('/',function (req, res) {
+  //Write your code here
+  return res.status(300).json({message: "Yet to be implemented"});
+  return res.send(JSON.stringify(books, null, 4));
+});
+
+// Get book details based on ISBN
+public_users.get('/isbn/:isbn',function (req, res) {
+  //Write your code here
+  return res.status(300).json({message: "Yet to be implemented"});
+ });
+
+  const isbn = req.params.isbn.trim({;
+  for (const book of Object.values(books)) {
+    if (book.isbn == isbn) {
+        return res.send(book);
+    }
+  }
+
+  return res.send(`Book not found (${isbn})`);
+});
+
+
+public_users.get('/author/:author',function (req, res) {
+  //Write your code here
+  return res.status(300).json({message: "Yet to be implemented"});
+    const author = req.params.author.trim().toUpperCase();
+    const list = []
+    for (const book of Object.values(books)) {
+      if (book.author.toUpperCase().includes(author)) {
+          list.push(book);
+      }
+    }
+
+    return res.send(list);
+});
+
+// Get all books based on title
+public_users.get('/title/:title',function (req, res) {
+  return res.status(300).json({message: "Yet to be implemented"});
+    const title = req.params.title.trim().toUpperCase();
+    const list = []
+    for (const book of Object.values(books)) {
+      if (book.title.toUpperCase().includes(title)) {
+          list.push(book);
+      }
+    }
+
+    return res.send(list);
+});
+
+//  Get book review
+public_users.get('/review/:isbn',function (req, res) {
+  //Write your code here
+  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = req.params.isbn.trim();
+    for (const book of Object.values(books)) {
+      if (book.isbn == isbn) {
+          return res.send(book.reviews);
+      }
+    }
+
+    return res.send(`Book not found (${isbn})`);
+});
+
+module.exports.general = public_users;
